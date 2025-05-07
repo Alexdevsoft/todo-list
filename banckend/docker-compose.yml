@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: tododb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - todo-network
+
+  backend:
+    build: ./backend
+    depends_on:
+      - db
+	environment:
+	      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/tododb
+	      SPRING_DATASOURCE_USERNAME: postgres
+	      SPRING_DATASOURCE_PASSWORD: 123
+    ports:
+      - "8080:8080"
+    networks:
+      - todo-network
+
+  frontend:
+    image: nginx:alpine
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    ports:
+      - "80:80"
+    networks:
+      - todo-network
+
+  cypress:
+    image: cypress/included:10.3.0
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./cypress:/e2e
+    working_dir: /e2e
+    networks:
+      - todo-network
+
+volumes:
+  postgres_data:
+
+networks:
+  todo-network:
+    driver: bridge
